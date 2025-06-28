@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rice Production Predictor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    input, button {
+      margin-top: 10px;
+      display: block;
+    }
+    #status, #prediction, #fileInfo {
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload Rice Production Data (PDF)</h1>
+
+  <input type="file" id="pdfFile" accept="application/pdf">
+  <input type="number" id="targetYear" placeholder="Enter year to predict (e.g., 2022)">
+  <p id="fileInfo"></p>
+  <button onclick="uploadPDF()">Upload & Predict</button>
+
+  <p id="status"></p>
+  <p id="prediction"></p>
+
+  <script>
+    const fileInput = document.getElementById('pdfFile');
+    const yearInput = document.getElementById('targetYear');
+    const fileInfo = document.getElementById('fileInfo');
+    const statusElem = document.getElementById('status');
+    const predictionElem = document.getElementById('prediction');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) {
+        fileInfo.innerText = "Selected File: " + fileInput.files[0].name;
+      } else {
+        fileInfo.innerText = "";
+      }
+    });
+
+    async function uploadPDF() {
+      const targetYear = parseInt(yearInput.value);
+      if (!fileInput.files[0] || !targetYear) {
+        statusElem.innerText = "Please select a PDF and enter a valid prediction year.";
+        statusElem.className = "error";
+        predictionElem.innerText = "";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('pdf', fileInput.files[0]);
+      formData.append('year', targetYear);
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          statusElem.innerText = result.message;
+          statusElem.className = "success";
+
+          const kilotonnes = (result.predicted_production).toFixed(2);
+          const formatted = Number(kilotonnes).toLocaleString('en-IN');
+
+          predictionElem.innerText =
+            `📅 Predicted Production for ${result.predicted_year}: ${formatted} kilotonnes`;
+        } else {
+          statusElem.innerText = "Error: " + result.error;
+          statusElem.className = "error";
+          predictionElem.innerText = "";
+        }
+      } catch (error) {
+        statusElem.innerText = "Network error: " + error.message;
+        statusElem.className = "error";
+        predictionElem.innerText = "";
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
